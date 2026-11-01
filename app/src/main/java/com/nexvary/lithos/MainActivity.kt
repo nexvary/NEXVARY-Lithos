@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
@@ -49,6 +50,11 @@ private fun LithosApp() {
     var arabic by remember { mutableStateOf(true) }
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf<Mineral?>(null) }
+    val context = LocalContext.current
+    val collection = remember(context) { LocalCollection(context) }
+    var specimens by remember { mutableStateOf(collection.all()) }
+    var specimenName by remember { mutableStateOf("") }
+    var specimenNote by remember { mutableStateOf("") }
     BackHandler(page != Page.HOME || selected != null) {
         if (selected != null) selected = null else page = Page.HOME
     }
@@ -102,6 +108,33 @@ private fun LithosApp() {
                                     Column(Modifier.fillMaxWidth().padding(16.dp)) {
                                         Text(if (arabic) mineral.ar else mineral.en, color = Color.White)
                                         Text("${mineral.formula}  •  Mohs ${mineral.mohs}", color = metallic)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    page == Page.COLLECTION -> {
+                        Text(t("عيناتي المحفوظة", "Saved specimens"), color = Color.White, fontSize = 20.sp)
+                        OutlinedTextField(value = specimenName, onValueChange = { specimenName = it },
+                            label = { Text(t("اسم العينة", "Specimen name")) }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = specimenNote, onValueChange = { specimenNote = it },
+                            label = { Text(t("ملاحظات", "Notes")) }, modifier = Modifier.fillMaxWidth())
+                        Button(onClick = {
+                            if (collection.add(specimenName, specimenNote)) {
+                                specimens = collection.all()
+                                specimenName = ""
+                                specimenNote = ""
+                            }
+                        }) { Text(t("حفظ", "Save")) }
+                        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(specimens, key = { it.id }) { item ->
+                                Card(colors = CardDefaults.cardColors(containerColor = panel)) {
+                                    Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                                        Text(item.name, color = Color.White)
+                                        Text(item.note, color = metallic)
+                                        TextButton(onClick = {
+                                            if (collection.remove(item.id)) specimens = collection.all()
+                                        }) { Text(t("حذف", "Delete")) }
                                     }
                                 }
                             }
